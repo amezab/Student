@@ -1,0 +1,24 @@
+name: Auto-Version Feature Branches
+on: [create]
+jobs:
+  tag-version:
+    if: github.event.ref_type == 'branch' && startsWith(github.event.ref, 'feature/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Update Maven Version
+        run: |
+          CLEAN_NAME=$(echo "${{ github.event.ref }}" | sed 's/feature\///g')
+          mvn versions:set -DnewVersion=1.0.0-${CLEAN_NAME}-SNAPSHOT -DgenerateBackupPoms=false
+      - name: Push Changes back to Branch
+        run: |
+          git config --global user.name 'Version Bot'
+          git config --global user.email 'bot@github.com'
+          git add pom.xml
+          git commit -m 'chore: sync maven version'
+          git push origin ${{ github.event.ref }}
